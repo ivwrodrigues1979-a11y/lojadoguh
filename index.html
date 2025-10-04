@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loja do Guh</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#BEEAD8] text-gray-800 font-sans">
+  <!-- Header -->
+  <header class="flex flex-col md:flex-row items-center justify-between p-4 bg-[#FFD369] shadow-md">
+    <img src="images/Logo_Loja_do_GuH_Opcao4.png" alt="Loja do Guh" class="w-40 mb-3 md:mb-0">
+    <input type="text" id="search" placeholder="Buscar produtos..." 
+           class="px-3 py-2 rounded-lg border border-gray-300 w-full md:w-1/3 focus:outline-none">
+  </header>
+
+  <!-- Categorias -->
+  <nav id="category-menu" class="flex flex-wrap justify-center gap-3 p-4 bg-[#FFB6B9]">
+    <!-- Categorias são carregadas dinamicamente -->
+  </nav>
+
+  <!-- Produtos -->
+  <section id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-6">
+    <!-- Produtos carregados dinamicamente -->
+  </section>
+
+  <!-- Rodapé -->
+  <footer class="text-center p-4 bg-[#FFD369] mt-10">
+    <p class="text-sm">© 2025 Loja do Guh | Afiliado Shopee & Mercado Livre</p>
+  </footer>
+
+  <!-- Script -->
+  <script>
+    async function loadProducts() {
+      const res = await fetch('products.json');
+      const data = await res.json();
+      const grid = document.getElementById('product-grid');
+      const menu = document.getElementById('category-menu');
+
+      // Criar lista de categorias únicas
+      const categories = ['Todos', ...new Set(data.map(p => p.category))];
+
+      // Renderizar categorias
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.textContent = cat;
+        btn.className = "category-btn bg-[#FDD85D] px-4 py-2 rounded-full hover:bg-[#FF7B54] hover:text-white transition";
+        btn.onclick = () => filterByCategory(cat, data);
+        menu.appendChild(btn);
+      });
+
+      // Renderizar todos os produtos
+      renderProducts(data);
+
+      // Busca
+      document.getElementById('search').addEventListener('input', e => {
+        const term = e.target.value.toLowerCase();
+        const filtered = data.filter(p => p.title.toLowerCase().includes(term));
+        renderProducts(filtered);
+      });
+    }
+
+    function renderProducts(products) {
+  const grid = document.getElementById('product-grid');
+  grid.innerHTML = '';
+
+  if (products.length === 0) {
+    grid.innerHTML = '<p class="text-center col-span-3 text-gray-600">Nenhum produto encontrado 😕</p>';
+    return;
+  }
+
+  products.forEach(p => {
+    const card = document.createElement('div');
+    card.className = "bg-white rounded-xl shadow-md p-3 hover:shadow-lg transition flex flex-col items-center";
+
+    card.innerHTML = `
+      <div class="w-full h-40 flex justify-center items-center mb-2">
+        <img src="${p.image}" alt="${p.title}" class="max-h-36 object-contain">
+      </div>
+      <h3 class="text-sm font-medium text-center line-clamp-2">${p.title}</h3>
+      <p class="text-[#FF7B54] font-bold mt-1 text-base">${p.price}</p>
+      <a href="${p.link}" target="_blank" 
+         class="mt-2 px-3 py-1 text-sm bg-[#FF7B54] text-white rounded-full text-center hover:opacity-90">
+         Ver Produto
+      </a>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+    function filterByCategory(category, data) {
+      if (category === 'Todos') {
+        renderProducts(data);
+      } else {
+        const filtered = data.filter(p => p.category === category);
+        renderProducts(filtered);
+      }
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
