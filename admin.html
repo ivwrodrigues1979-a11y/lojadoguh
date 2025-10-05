@@ -70,62 +70,136 @@
   </footer>
 
   <script>
-    const PASSWORD = "guh123"; // 👉 altere essa senha
+  const PASSWORD = "guh123"; // 🔑 altere se quiser
+  let products = [];
+  let editingIndex = null;
 
-    function checkPassword() {
-      const input = document.getElementById('admin-pass').value;
-      const loginSection = document.getElementById('login-section');
-      const formSection = document.getElementById('form-section');
-      const errorMsg = document.getElementById('error-msg');
+  function checkPassword() {
+    const input = document.getElementById('admin-pass').value;
+    const loginSection = document.getElementById('login-section');
+    const formSection = document.getElementById('form-section');
+    const errorMsg = document.getElementById('error-msg');
 
-      if (input === PASSWORD) {
-        loginSection.classList.add('hidden');
-        formSection.classList.remove('hidden');
-      } else {
-        errorMsg.classList.remove('hidden');
-      }
+    if (input === PASSWORD) {
+      loginSection.classList.add('hidden');
+      formSection.classList.remove('hidden');
+      loadProducts();
+    } else {
+      errorMsg.classList.remove('hidden');
+    }
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('products.json');
+      products = await res.json();
+    } catch {
+      products = [];
+    }
+    updatePreview();
+    renderTable();
+  }
+
+  document.getElementById('product-form').addEventListener('submit', e => {
+    e.preventDefault();
+
+    const newProduct = {
+      title: document.getElementById('title').value,
+      price: document.getElementById('price').value,
+      image: document.getElementById('image').value,
+      category: document.getElementById('category').value,
+      link: document.getElementById('link').value
+    };
+
+    if (editingIndex !== null) {
+      products[editingIndex] = newProduct;
+      editingIndex = null;
+    } else {
+      products.push(newProduct);
     }
 
-    let products = [];
+    e.target.reset();
+    updatePreview();
+    renderTable();
+  });
 
-    // Carregar produtos existentes
-    fetch('products.json')
-      .then(res => res.json())
-      .then(data => products = data)
-      .catch(() => products = []);
+  function updatePreview() {
+    document.getElementById('json-output').value = JSON.stringify(products, null, 2);
+  }
 
-    // Adicionar novo produto
-    document.getElementById('product-form').addEventListener('submit', e => {
-      e.preventDefault();
+  function renderTable() {
+    let tableArea = document.getElementById('table-area');
+    if (!tableArea) {
+      tableArea = document.createElement('div');
+      tableArea.id = 'table-area';
+      tableArea.className = 'mt-8 bg-white p-6 rounded-2xl shadow-md';
+      document.getElementById('form-section').appendChild(tableArea);
+    }
 
-      const newProduct = {
-        title: document.getElementById('title').value,
-        price: document.getElementById('price').value,
-        image: document.getElementById('image').value,
-        category: document.getElementById('category').value,
-        link: document.getElementById('link').value
-      };
+    if (products.length === 0) {
+      tableArea.innerHTML = '<p class="text-center text-gray-600">Nenhum produto cadastrado ainda.</p>';
+      return;
+    }
 
-      products.push(newProduct);
+    let html = `
+      <h3 class="text-lg font-semibold mb-4 text-center">Produtos Cadastrados</h3>
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="bg-[#FFD369] text-left">
+            <th class="p-2">Título</th>
+            <th class="p-2">Categoria</th>
+            <th class="p-2">Preço</th>
+            <th class="p-2 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${products.map((p, i) => `
+            <tr class="border-t">
+              <td class="p-2">${p.title}</td>
+              <td class="p-2">${p.category}</td>
+              <td class="p-2">${p.price}</td>
+              <td class="p-2 text-center">
+                <button onclick="editProduct(${i})" class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs hover:opacity-90">Editar</button>
+                <button onclick="deleteProduct(${i})" class="bg-red-500 text-white px-2 py-1 rounded-md text-xs hover:opacity-90 ml-2">Excluir</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
 
-      // Atualizar JSON no textarea
-      const jsonOutput = document.getElementById('json-output');
-      jsonOutput.value = JSON.stringify(products, null, 2);
+    tableArea.innerHTML = html;
+  }
 
-      // Limpar formulário
-      e.target.reset();
-    });
+  function editProduct(index) {
+    const p = products[index];
+    document.getElementById('title').value = p.title;
+    document.getElementById('price').value = p.price;
+    document.getElementById('image').value = p.image;
+    document.getElementById('category').value = p.category;
+    document.getElementById('link').value = p.link;
+    editingIndex = index;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-    // Baixar JSON
-    document.getElementById('download-btn').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(products, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'products.json';
-      a.click();
-    });
-  </script>
+  function deleteProduct(index) {
+    if (confirm(`Tem certeza que deseja excluir "${products[index].title}"?`)) {
+      products.splice(index, 1);
+      updatePreview();
+      renderTable();
+    }
+  }
+
+  document.getElementById('download-btn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(products, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products.json';
+    a.click();
+  });
+</script>
+
 
 </body>
 </html>
